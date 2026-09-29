@@ -1,0 +1,170 @@
+openapi: 3.0.3
+info:
+  title: Orders Service API
+  description: Single-file contract-driven API specification demonstrating API-First architecture.
+  version: 1.0.0
+  contact:
+    name: Mothusi Molorane
+    email: molorane.mothusi@gmail.com
+
+servers:
+  - url: http://localhost:8080/api
+    description: Local development environment
+
+tags:
+  - name: Orders
+    description: Order processing and lifecycle operations
+
+paths:
+  /v1/orders:
+    post:
+      tags:
+        - Orders
+      summary: Place a new purchase order
+      operationId: createOrder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderRequest'
+      responses:
+        '201':
+          description: Order placed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+        '400':
+          description: Invalid request payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /v1/orders/{orderId}:
+    get:
+      tags:
+        - Orders
+      summary: Retrieve order by ID
+      operationId: getOrderById
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          description: Unique UUID identifier of the order
+          schema:
+            type: string
+            format: uuid
+            example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+      responses:
+        '200':
+          description: Order details found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+        '404':
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+components:
+  schemas:
+    OrderRequest:
+      type: object
+      required:
+        - customerId
+        - currency
+        - items
+      properties:
+        customerId:
+          type: string
+          example: "CUST-98214"
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          example: "USD"
+        items:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/OrderItem'
+
+    OrderItem:
+      type: object
+      required:
+        - sku
+        - quantity
+        - unitPrice
+      properties:
+        sku:
+          type: string
+          example: "JAVA-BOOK-2026"
+        quantity:
+          type: integer
+          minimum: 1
+          example: 2
+        unitPrice:
+          type: number
+          format: double
+          example: 49.99
+
+    OrderResponse:
+      type: object
+      required:
+        - orderId
+        - customerId
+        - status
+        - totalAmount
+        - createdAt
+      properties:
+        orderId:
+          type: string
+          format: uuid
+          example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        customerId:
+          type: string
+          example: "CUST-98214"
+        status:
+          $ref: '#/components/schemas/OrderStatus'
+        totalAmount:
+          type: number
+          format: double
+          example: 99.98
+        createdAt:
+          type: string
+          format: date-time
+          example: "2026-09-29T14:30:00Z"
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+
+    OrderStatus:
+      type: string
+      enum:
+        - PENDING
+        - CONFIRMED
+        - SHIPPED
+        - CANCELLED
+
+    ApiError:
+      type: object
+      required:
+        - code
+        - message
+        - timestamp
+      properties:
+        code:
+          type: string
+          example: "ORDER_NOT_FOUND"
+        message:
+          type: string
+          example: "Order with the specified ID does not exist"
+        timestamp:
+          type: string
+          format: date-time

@@ -1,0 +1,22 @@
+# Target directories (build outputs)
+target/
+**/target/
+
+# IDE and Editor Metadata
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.settings/
+.project
+.classpath
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+
+# Logs and Crash Dumps
+*.log
+hs_err_pid*
+replay_pid*
