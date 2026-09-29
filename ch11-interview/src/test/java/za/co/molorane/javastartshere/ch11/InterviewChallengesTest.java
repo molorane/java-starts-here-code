@@ -5,10 +5,17 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DisplayName("Chapter 11: Java Interview Challenges Tests")
 class InterviewChallengesTest {
@@ -38,16 +45,127 @@ class InterviewChallengesTest {
     }
 
     @Test
-    @DisplayName("Should sort employees using multi-field declarative Comparator chain")
+    @DisplayName("Should demonstrate HashMap bitwise index calculation and power-of-two requirement")
+    void testHashMapBitwiseIndexCalculation() {
+        int capacity = 16;
+        int index = HashMapDeepMechanics.computeBucketIndex("test-key", capacity);
+        assertThat(index).isBetween(0, capacity - 1);
+
+        // Non-power-of-two capacity must be rejected
+        assertThatThrownBy(() -> HashMapDeepMechanics.computeBucketIndex("key", 15))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Capacity must be a power of two");
+    }
+
+    @Test
+    @DisplayName("Should demonstrate the Mutable Key Trap: mutating key after put causes get() to fail")
+    void testMutableKeyTrap() {
+        Map<HashMapDeepMechanics.MutableKey, String> map = new HashMap<>();
+        HashMapDeepMechanics.MutableKey key = new HashMapDeepMechanics.MutableKey("ORD-101");
+
+        map.put(key, "Active Order");
+        assertThat(map.get(key)).isEqualTo("Active Order");
+
+        // Now mutate the key's state
+        key.setValue("ORD-999");
+
+        // get() fails because the bucket index changed! The entry is silently lost in the old bucket.
+        assertThat(map.get(key)).isNull();
+    }
+
+    @Test
+    @DisplayName("Should demonstrate the catastrophic missing hashCode trap in HashSet")
+    void testMissingHashCodeContractTrap() {
+        // 1. Broken implementation: overrides equals() without hashCode()
+        Set<EqualsHashCodeContract.BrokenUser> brokenSet = new HashSet<>();
+        brokenSet.add(new EqualsHashCodeContract.BrokenUser("USR-1"));
+
+        // Searching with a new instance with the same logical ID fails!
+        boolean foundBroken = brokenSet.contains(new EqualsHashCodeContract.BrokenUser("USR-1"));
+        assertThat(foundBroken).isFalse();
+
+        // 2. Correct implementation: obeys the equals & hashCode contract
+        Set<EqualsHashCodeContract.CorrectUser> correctSet = new HashSet<>();
+        correctSet.add(new EqualsHashCodeContract.CorrectUser("USR-1"));
+
+        boolean foundCorrect = correctSet.contains(new EqualsHashCodeContract.CorrectUser("USR-1"));
+        assertThat(foundCorrect).isTrue();
+    }
+
+    @Test
+    @DisplayName("Should verify the 5 formal mathematical properties of the equals contract")
+    void testEqualsMathematicalContract() {
+        EqualsHashCodeContract.CorrectUser x = new EqualsHashCodeContract.CorrectUser("A");
+        EqualsHashCodeContract.CorrectUser y = new EqualsHashCodeContract.CorrectUser("A");
+        EqualsHashCodeContract.CorrectUser z = new EqualsHashCodeContract.CorrectUser("A");
+
+        // 1. Reflexive
+        assertThat(x.equals(x)).isTrue();
+
+        // 2. Symmetric
+        assertThat(x.equals(y)).isEqualTo(y.equals(x));
+
+        // 3. Transitive
+        assertThat(x.equals(y) && y.equals(z)).isTrue();
+        assertThat(x.equals(z)).isTrue();
+
+        // 4. Consistent
+        assertThat(x.equals(y)).isTrue();
+        assertThat(x.equals(y)).isTrue();
+
+        // 5. Non-nullity
+        assertThat(x.equals(null)).isFalse();
+    }
+
+    @Test
+    @DisplayName("Should demonstrate natural ordering via Comparable and multi-field declarative Comparator chaining")
     void testComparatorChaining() {
-        Employee e1 = new Employee("Engineering", "Alice", 120_000);
-        Employee e2 = new Employee("Engineering", "Bob", 150_000);
-        Employee e3 = new Employee("Finance", "Charlie", 95_000);
+        Employee e1 = new Employee(101L, "Lerato", "Moloi", "Engineering", "Johannesburg", 120_000);
+        Employee e2 = new Employee(102L, "Sipho", "Dlamini", "Finance", "Durban", 95_000);
+        Employee e3 = new Employee(103L, "Lerato", "Khumalo", "Engineering", "Cape Town", 140_000);
 
+        // 1. Natural ordering via Comparable in TreeSet (sorted by ID ascending: 101, 102, 103)
+        TreeSet<Employee> naturallySorted = new TreeSet<>();
+        naturallySorted.addAll(List.of(e3, e1, e2));
+        assertThat(naturallySorted).containsExactly(e1, e2, e3);
+
+        // 2. SQL-style multi-column sort:
+        // ORDER BY department, lastName, firstName, salary DESC
         List<Employee> list = new ArrayList<>(List.of(e1, e2, e3));
-        list.sort(Employee.COMPARATOR);
+        list.sort(Employee.SQL_STYLE_COMPARATOR);
 
-        // In Engineering, Bob has higher salary so Bob comes first, then Alice, then Finance Charlie
-        assertThat(list).containsExactly(e2, e1, e3);
+        // Engineering comes before Finance; Khumalo comes before Moloi in Engineering
+        assertThat(list).containsExactly(e3, e1, e2);
+    }
+
+    @Test
+    @DisplayName("Should demonstrate high-throughput concurrent counters with AtomicLong and LongAdder")
+    void testConcurrencyInterviewBasics() throws Exception {
+        ConcurrencyInterviewBasics counters = new ConcurrencyInterviewBasics();
+        int threadCount = 8;
+        int incrementsPerThread = 10_000;
+
+        ExecutorService pool = Executors.newFixedThreadPool(threadCount);
+        CountDownLatch latch = new CountDownLatch(threadCount);
+
+        for (int i = 0; i < threadCount; i++) {
+            pool.submit(() -> {
+                try {
+                    for (int j = 0; j < incrementsPerThread; j++) {
+                        counters.incrementAtomic();
+                        counters.incrementAdder();
+                    }
+                } finally {
+                    latch.countDown();
+                }
+            });
+        }
+
+        latch.await();
+        pool.shutdown();
+
+        long expectedTotal = (long) threadCount * incrementsPerThread;
+        assertThat(counters.getAtomicValue()).isEqualTo(expectedTotal);
+        assertThat(counters.getAdderValue()).isEqualTo(expectedTotal);
     }
 }
