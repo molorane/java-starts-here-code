@@ -79,7 +79,7 @@ class CollectionsAndGenericsTest {
     @Test
     @DisplayName("Super Type Token captures generic type arguments at runtime")
     void shouldCaptureGenericTypeViaSuperTypeToken() {
-        var token = new TypeReference<List<String>>() {};
+        var token = new TypeReference<List<String>>() { };
         assertThat(token.getType().getTypeName())
                 .isEqualTo("java.util.List<java.lang.String>");
     }

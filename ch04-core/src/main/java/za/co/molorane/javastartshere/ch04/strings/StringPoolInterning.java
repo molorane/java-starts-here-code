@@ -17,7 +17,7 @@ public class StringPoolInterning {
     /**
      * Demonstrates reference equality (==) vs logical equality (equals) across pool boundaries.
      */
-    public record ComparisonResult(boolean literalSameRef, boolean heapDifferentRef, boolean internedSameRef) {}
+    public record ComparisonResult(boolean literalSameRef, boolean heapDifferentRef, boolean internedSameRef) { }
 
     public static ComparisonResult compareStringAllocation() {
         String s1 = "Java25";

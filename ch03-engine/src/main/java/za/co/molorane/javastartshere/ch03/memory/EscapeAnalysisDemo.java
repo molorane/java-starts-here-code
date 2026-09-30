@@ -20,7 +20,7 @@ public class EscapeAnalysisDemo {
     /**
      * Coordinate record used for geometric calculations.
      */
-    public record Point(double x, double y) {}
+    public record Point(double x, double y) { }
 
     /**
      * Non-escaping method:

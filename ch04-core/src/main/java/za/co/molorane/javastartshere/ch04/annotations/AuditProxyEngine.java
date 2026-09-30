@@ -46,7 +46,7 @@ public class AuditProxyEngine {
         }
     }
 
-    public record ProxyAuditResult(List<String> auditLog, List<String> executionSteps) {}
+    public record ProxyAuditResult(List<String> auditLog, List<String> executionSteps) { }
 
     @SuppressWarnings("unchecked")
     public static PaymentProcessor createAuditedProxy(PaymentProcessor target, List<String> auditTrail) {

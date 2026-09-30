@@ -20,12 +20,20 @@ public class PecsGenericsPipeline {
 
     public static class Transaction {
         private final double amount;
-        public Transaction(double amount) { this.amount = amount; }
-        public double getAmount() { return amount; }
+
+        public Transaction(double amount) {
+            this.amount = amount;
+        }
+
+        public double getAmount() {
+            return amount;
+        }
     }
 
     public static class PriorityTransaction extends Transaction {
-        public PriorityTransaction(double amount) { super(amount); }
+        public PriorityTransaction(double amount) {
+            super(amount);
+        }
     }
 
     /**
@@ -42,7 +50,7 @@ public class PecsGenericsPipeline {
     /**
      * Neal Gafter's Super Type Token pattern to outsmart type erasure.
      */
-    public static abstract class TypeReference<T> {
+    public abstract static class TypeReference<T> {
         private final Type type;
 
         protected TypeReference() {

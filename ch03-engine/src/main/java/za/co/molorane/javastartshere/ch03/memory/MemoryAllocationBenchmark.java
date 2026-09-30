@@ -16,7 +16,7 @@ import java.util.List;
  */
 public class MemoryAllocationBenchmark {
 
-    public record AuditTransaction(String id, double amount, String status) {}
+    public record AuditTransaction(String id, double amount, String status) { }
 
     /**
      * Anti-pattern: String concatenation in a loop.

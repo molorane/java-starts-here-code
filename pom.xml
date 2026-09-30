@@ -32,6 +32,7 @@
     </modules>
 
     <properties>
+        <project.rootdir>${maven.multiModuleProjectDirectory}</project.rootdir>
         <java.version>25</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.version>3.9.9</maven.version>
@@ -103,6 +104,7 @@
                         <includeTestSourceDirectory>true</includeTestSourceDirectory>
                         <failOnViolation>false</failOnViolation>
                         <configLocation>${project.rootdir}/config/checkstyle/checkstyle.xml</configLocation>
+                        <propertyExpansion>config_loc=${project.rootdir}/config/checkstyle</propertyExpansion>
                     </configuration>
                 </plugin>
 

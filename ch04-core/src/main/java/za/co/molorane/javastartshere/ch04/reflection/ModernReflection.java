@@ -20,7 +20,7 @@ import java.util.List;
  */
 public class ModernReflection {
 
-    public record UserProfile(String username, String role, boolean active) {}
+    public record UserProfile(String username, String role, boolean active) { }
 
     /**
      * Extracts record component names using modern Record reflection APIs.
