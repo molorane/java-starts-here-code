@@ -168,4 +168,78 @@ class InterviewChallengesTest {
         assertThat(counters.getAtomicValue()).isEqualTo(expectedTotal);
         assertThat(counters.getAdderValue()).isEqualTo(expectedTotal);
     }
+
+    @Test
+    @DisplayName("Should demonstrate that Java is strictly Pass-by-Value")
+    void testPassByValueMechanics() {
+        PassByValuePhysics.Account acc1 = new PassByValuePhysics.Account(100.0);
+        PassByValuePhysics.Account acc2 = new PassByValuePhysics.Account(200.0);
+
+        // 1. Modifying object state via reference copy works, but rebinding parameter reference does not affect caller
+        PassByValuePhysics.modifyAccount(acc1, 500.0, 9999.0);
+        assertThat(acc1.getBalance()).isEqualTo(500.0); // State modified on heap
+
+        // 2. Swapping references has zero effect on the caller's variables
+        PassByValuePhysics.swap(acc1, acc2);
+        assertThat(acc1.getBalance()).isEqualTo(500.0);
+        assertThat(acc2.getBalance()).isEqualTo(200.0);
+    }
+
+    @Test
+    @DisplayName("Should demonstrate Fail-Fast ConcurrentModificationException and safe alternatives")
+    void testFailFastIteratorAndSafeRemoval() {
+        // 1. Unsafe iteration throws ConcurrentModificationException
+        List<String> unsafeList = new ArrayList<>(List.of("alpha", "beta", "gamma", "delta"));
+        assertThatThrownBy(() -> IteratorPhysics.unsafeRemove(unsafeList, "beta"))
+                .isInstanceOf(java.util.ConcurrentModificationException.class);
+
+        // 2. Safe removal using Iterator.remove()
+        List<String> safeIteratorList = new ArrayList<>(List.of("alpha", "beta", "gamma"));
+        IteratorPhysics.safeIteratorRemove(safeIteratorList, "beta");
+        assertThat(safeIteratorList).containsExactly("alpha", "gamma");
+
+        // 3. Safe removal using Collection.removeIf()
+        List<String> safePredicateList = new ArrayList<>(List.of("alpha", "beta", "gamma"));
+        IteratorPhysics.safePredicateRemove(safePredicateList, "beta");
+        assertThat(safePredicateList).containsExactly("alpha", "gamma");
+
+        // 4. Fail-Safe iteration with CopyOnWriteArrayList allows concurrent mutation during loop
+        List<String> cowList = new java.util.concurrent.CopyOnWriteArrayList<>(List.of("A", "B", "C"));
+        for (String item : cowList) {
+            if ("B".equals(item)) {
+                cowList.add("D"); // No ConcurrentModificationException!
+            }
+        }
+        assertThat(cowList).containsExactly("A", "B", "C", "D");
+    }
+
+    @Test
+    @DisplayName("Should demonstrate volatile ordering/visibility and AtomicInteger atomicity")
+    void testVolatileAtomicityGotcha() throws Exception {
+        VolatileAtomicityGotcha gotcha = new VolatileAtomicityGotcha();
+        int threads = 4;
+        int perThread = 5_000;
+
+        ExecutorService pool = Executors.newFixedThreadPool(threads);
+        CountDownLatch latch = new CountDownLatch(threads);
+
+        for (int t = 0; t < threads; t++) {
+            pool.submit(() -> {
+                try {
+                    for (int i = 0; i < perThread; i++) {
+                        gotcha.incrementVolatile();
+                        gotcha.incrementAtomic();
+                    }
+                } finally {
+                    latch.countDown();
+                }
+            });
+        }
+
+        latch.await();
+        pool.shutdown();
+
+        // AtomicInteger is guaranteed to reach exact sum without lost updates
+        assertThat(gotcha.getAtomicCount()).isEqualTo(threads * perThread);
+    }
 }
